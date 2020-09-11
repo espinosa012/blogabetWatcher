@@ -3,8 +3,8 @@ import  time
 import 	datetime
 import 	platform
 from 	getpass 									import 	getpass
-from 	cryptography.fernet 						import Fernet
-from 	os 											import path
+from 	cryptography.fernet 						import 	Fernet
+from 	os 											import 	path
 
 from 	bet_markets 								import 	set_market_and_bet, print_pick
 
@@ -17,6 +17,7 @@ from 	selenium.webdriver.common.by 				import 	By
 from 	selenium.webdriver.support 					import 	expected_conditions as EC
 from 	selenium.webdriver.common.action_chains 	import 	ActionChains
 
+import 	undetected_chromedriver as uc
 
 
 class Blogabet(object):
@@ -34,24 +35,10 @@ class Blogabet(object):
 		
 
 	def get_driver(self):
-		options 		= 	Options()
-
+		options = 	Options()
 		#	Comment this line to not headless web navigator
-		options.add_argument('--headless')
-
-		webdriver_path 		= 	'webdriver/chromedriver'
-		if 'Win' in str(platform.system()):
-			webdriver_path	=	webdriver_path+'.exe'
-
-		try:
-			driver 	=	Chrome(executable_path=webdriver_path, chrome_options=options)
-			driver.maximize_window()
-			return driver
-
-		except Exception as e:
-			raise Exception('Could not get webdriver ({}), please download webdriver for your platform from https://chromedriver.chromium.org/'.format(e))
-
-
+		#options.add_argument('--headless')
+		return uc.Chrome(options=options)
 
 
 
@@ -84,7 +71,7 @@ class Blogabet(object):
 
 
 	def get_last_pick_in_feed(self, my_tipsters=True):
-		#	Si my_tipsters = False, obtiene los picks del feed general de blogabet, en vez de aquellos de los tipsters a los que seguimos
+		#	If my_tipsters == False, it gets picks from all tipsters in blogabet, not only the ones you are following
 		if my_tipsters:
 			WebDriverWait(self.driver,50).until(EC.presence_of_element_located((By.XPATH, '//*[contains(text(), "My tipsters")]'))).click()
 
@@ -92,7 +79,7 @@ class Blogabet(object):
 
 		media_list_xpath	=	'.//*[contains(@class, "media-list")]'
 
-		#	Elementos html correspondientes a los picks
+		#	pick html elements
 		picks_in_feed		=	WebDriverWait(self.driver,50).until(EC.presence_of_element_located((By.XPATH, media_list_xpath))).find_elements_by_tag_name('li')
 		try:
 			last_pick_in_feed 	= 	self.get_pick_from_html(picks_in_feed[0])
@@ -108,13 +95,14 @@ class Blogabet(object):
 
 
 	def get_pick_from_html(self, elem):
+		#	Form pick object from 'li' elements
 		#	Recibe el elemento <li> en el que se encuentra el pick del feed y forma el objeto
 		pick 	=	{}
 
 		soup 	=	BeautifulSoup(elem.get_attribute('innerHTML'), 'html.parser')
 
 		if 'Click here to see the pick' in soup:
-			#	Pinchamos en 'here' y scrapeamos el pick 
+			#	Click on 'here', go to tipster url and scrape it from there 
 			return None
 
 
@@ -160,20 +148,21 @@ class Blogabet(object):
 		
 
 
-	def watch_blogabet_feed(self):
+	def watch_blogabet_feed(self, my_tipsters=True):
 		if not self.logged_in:
 			raise Exception('Log in into blogabet.com to watch your feed')
 		
 		print('Watching feed')
-		self.most_recent_pick 	=	self.get_last_pick_in_feed(self.driver)
+		self.most_recent_pick 	=	self.get_last_pick_in_feed(my_tipsters)
 
 		print('Last pick in feed:')
 		print_pick(self.most_recent_pick)
 
 		while True:
-			# Actualizar last_pick cuando llega uno nuevo
+			# Update last_pick when a new one appears. 
 			try:
-				new_pick 	=	self.get_last_pick_in_feed()
+				time.sleep(1)
+				new_pick 	=	self.get_last_pick_in_feed(my_tipsters)
 				if self.compare_picks(self.most_recent_pick, new_pick):
 					#	new pick in feed
 					print('New pick in feed ({})'.format(new_pick['date']))
@@ -184,8 +173,8 @@ class Blogabet(object):
 					print_pick(new_pick)
 
 			except Exception as e:
-				raise e
-			
+				#raise e
+				pass
 
 
 
@@ -263,6 +252,3 @@ class Blogabet(object):
 	    decrypted_password 	= 	f.decrypt(encrypted_password).decode()
 
 	    return decrypted_password
-
-
-

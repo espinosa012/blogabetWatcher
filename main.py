@@ -1,11 +1,10 @@
 from blogabet import Blogabet as bb
 
-
+#	Get Blogabet object and login
 bb 	=	bb()
 bb.blogabet_login()
 
-lp 	=	bb.get_last_pick_in_feed()
-print(lp)
-
+#	Start watching feed
+bb.watch_blogabet_feed(my_tipsters=True)
 
 

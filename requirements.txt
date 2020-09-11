@@ -1,0 +1,5 @@
+cryptography
+bs4
+selenium
+git+https://github.com/ultrafunkamsterdam/undetected-chromedriver.git
+html2text
